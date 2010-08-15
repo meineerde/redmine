@@ -15,6 +15,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+require 'rake'
+require 'rails/info'
 class AdminController < ApplicationController
   layout 'admin'
   
@@ -75,12 +77,39 @@ class AdminController < ApplicationController
   end
   
   def info
-    @db_adapter_name = ActiveRecord::Base.connection.adapter_name
     @checklist = [
       [:text_default_administrator_account_changed, User.find(:first, :conditions => ["login=? and hashed_password=?", 'admin', User.hash_password('admin')]).nil?],
       [:text_file_repository_writable, File.writable?(Attachment.storage_path)],
       [:text_plugin_assets_writable, File.writable?(Engines.public_directory)],
       [:text_rmagick_available, Object.const_defined?(:Magick)]
     ]
+    
+    app_servers = {
+      'Mongrel' => {:name => 'Mongrel', :version => Proc.new{Mongrel::Const::MONGREL_VERSION}},
+      'Thin' => {:name => 'Thin', :version => Proc.new{Thin::VERSION::STRING}},
+      'Unicorn' => {:name => 'Unicorn', :version =>Proc.new{Unicorn::Const::UNICORN_VERSION}},
+      'PhusionPassenger' => {:name => 'Phusion Passenger', :version => Proc.new{PhusionPassenger::VERSION_STRING}},
+      'RailsFCGIHandler' => {:name => 'FastCGI'}
+      # TOOD: find a way to test for CGI
+    }
+    app_server = (Object.constants & app_servers.keys).collect do |server|
+      name = app_servers[server][:name].underscore.humanize
+      version = app_servers[server][:version].call if app_servers[server][:version]
+      [name, version].compact.join(" ")
+    end.join(",")
+    app_server = l(:label_unknown) unless app_server.present?
+    
+
+
+    @infolist = Rails::Info.properties.dup
+    @infolist.insert(3, ['Rake version', RAKEVERSION])
+    @infolist.insert(11, [:text_log_file, Rails.configuration.log_path])
+    
+    @infolist += [
+      [:text_app_server, app_server],
+      [:text_redmine_username, Etc.getlogin]
+    ]
+    
+    @pluginlist = Redmine::Plugin.all
   end  
 end
