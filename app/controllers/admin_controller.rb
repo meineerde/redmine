@@ -87,7 +87,7 @@ class AdminController < ApplicationController
     app_servers = {
       'Mongrel' => {:name => 'Mongrel', :version => Proc.new{Mongrel::Const::MONGREL_VERSION}},
       'Thin' => {:name => 'Thin', :version => Proc.new{Thin::VERSION::STRING}},
-      'Unicorn' => {:name => 'Unicorn', :version =>Proc.new{Unicorn::Const::UNICORN_VERSION}},
+      'Unicorn' => {:name => 'Unicorn', :version => Proc.new{Unicorn::Const::UNICORN_VERSION}},
       'PhusionPassenger' => {:name => 'Phusion Passenger', :version => Proc.new{PhusionPassenger::VERSION_STRING}},
       'RailsFCGIHandler' => {:name => 'FastCGI'}
       # TOOD: find a way to test for CGI
@@ -99,11 +99,27 @@ class AdminController < ApplicationController
     end.join(",")
     app_server = l(:label_unknown) unless app_server.present?
     
-
-
+    # Find database connection encoding
+    encoding = case ActiveRecord::Base.connection.adapter_name
+    when 'Mysql'
+      ActiveRecord::Base.connection.show_variable('character_set%')
+    when 'PostgreSQL'
+      ActiveRecord::Base.connection.encoding
+    when 'SQLite'
+      # copied straight from ActiveRecord::ConnectionAdapters::SQLite3Adapter.encoding
+      # of the Rails3 Sqlite3 adapter
+      if ActiveRecord::Base.connection.respond_to?(:encoding)
+        ActiveRecord::Base.connection.encoding[0]['encoding']
+      else
+        result = ActiveRecord::Base.connection.select_all("PRAGMA 'encoding'")
+        result.present? ? result.first['encoding'] : nil
+      end
+    end || l(:label_unknown)
+    
     @infolist = Rails::Info.properties.dup
     @infolist.insert(3, ['Rake version', RAKEVERSION])
     @infolist.insert(11, [:text_log_file, Rails.configuration.log_path])
+    @infolist.insert(13, [:text_database_encoding, encoding])
     
     @infolist += [
       [:text_app_server, app_server],
