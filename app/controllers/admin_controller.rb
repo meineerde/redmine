@@ -106,7 +106,7 @@ class AdminController < ApplicationController
     when 'PostgreSQL'
       ActiveRecord::Base.connection.encoding
     when 'SQLite'
-      # copied straight from ActiveRecord::ConnectionAdapters::SQLite3Adapter.encoding
+      # works like ActiveRecord::ConnectionAdapters::SQLite3Adapter.encoding
       # of the Rails3 Sqlite3 adapter
       if ActiveRecord::Base.connection.respond_to?(:encoding)
         ActiveRecord::Base.connection.encoding[0]['encoding']
