@@ -3,7 +3,7 @@
 <p><strong><%= Redmine::Info.versioned_name %></strong></p>
 
 <table class="list">
-<% @checklist.each do |label, result| %>
+<% @env_checklist.each do |label, result| %>
 	<tr class="<%= cycle 'odd', 'even' %>">
 		<td><%= l(label) %></td>
 		<td width="30px"><%= image_tag((result ? 'true.png' : 'exclamation.png'), :style => "vertical-align:bottom;") %></td>
@@ -13,7 +13,7 @@
 
 <h3><%=l(:label_environment)%></h3>
 <table class="list">
-<% @infolist.each do |label, info| %>
+<% @env_rails.each do |label, info| %>
   <tr class="<%= cycle 'odd', 'even' %>">
     <td><%= label.is_a?(Symbol) ? l(label) : h(label) %></td>
     <td><%= h(info) %></td>
@@ -22,9 +22,9 @@
 </table>
 
 
-<% if @pluginlist.any? %>
+<% if @env_plugins.any? %>
 <h3><%= l(:label_plugins) %></h3>
-<%= render :partial => 'admin/plugins', :locals => {:plugins => @pluginlist} %>
+<%= render :partial => 'admin/plugins', :locals => {:plugins => @env_plugins} %>
 <% end %>
 
 <% html_title(l(:label_information_plural)) -%>
