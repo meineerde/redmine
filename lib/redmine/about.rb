@@ -24,18 +24,18 @@ module Redmine
 
         checklist = environment[:checklist].collect {|label, value| [l(label), value ? "Yes" : "No"]}
         info = environment[:rails].collect {|label, value| [(label.is_a?(Symbol) ? l(label) : label), value]}
-        plugins = environment[:plugins].collect {|plugin| [plugin.name, plugin.version] }
+        plugins = environment[:plugins].collect {|plugin| [plugin.name, plugin.version] } || nil
 
         # get overall width of label column
         column_width = [
           checklist.collect {|label, value| label.length }.max,
           info.collect {|label, value| label.length }.max,
-          plugins.collect {|label, value| label.length }.max
+          plugins.collect {|label, value| label.length }.max || 0
         ].max
 
         output += print("Checklist", checklist, column_width)
         output += print("Rails info", info, column_width)
-        output += print("Plugins", plugins, column_width)
+        output += print("Plugins", plugins, column_width) if plugins.present?
 
         output
       end
