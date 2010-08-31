@@ -61,7 +61,7 @@ module Redmine
           name = app_servers[server][:name].underscore.humanize
           version = app_servers[server][:version].call if app_servers[server][:version]
           [name, version].compact.join(" ")
-        end.join(",")
+        end.join(", ")
         app_server = l(:label_unknown) unless app_server.present?
 
         # Find database connection encoding
