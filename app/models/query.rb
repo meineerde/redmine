@@ -185,7 +185,10 @@ class Query < ActiveRecord::Base
     user_values = []
     user_values << ["<< #{l(:label_me)} >>", "me"] if User.current.logged?
     if project
-      user_values += project.users.sort.collect{|s| [s.name, s.id.to_s] }
+      user_values += User.active.all(
+        :include => :members,
+        :conditions => {"#{Member.table_name}.project_id" => project.self_and_descendants.visible}
+      ).collect{|u| [u.name, u.id.to_s]}
     else
       project_ids = Project.all(:conditions => Project.visible_by(User.current)).collect(&:id)
       if project_ids.any?
