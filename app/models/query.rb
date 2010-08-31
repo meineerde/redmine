@@ -185,17 +185,14 @@ class Query < ActiveRecord::Base
     user_values = []
     user_values << ["<< #{l(:label_me)} >>", "me"] if User.current.logged?
     if project
-      user_values += User.active.all(
-        :include => :members,
-        :conditions => {"#{Member.table_name}.project_id" => project.self_and_descendants.visible}
-      ).collect{|u| [u.name, u.id.to_s]}
+      projects = project.self_and_descendants.visible
     else
-      project_ids = Project.all(:conditions => Project.visible_by(User.current)).collect(&:id)
-      if project_ids.any?
-        # members of the user's projects
-        user_values += User.active.find(:all, :conditions => ["#{User.table_name}.id IN (SELECT DISTINCT user_id FROM members WHERE project_id IN (?))", project_ids]).sort.collect{|s| [s.name, s.id.to_s] }
-      end
+      projects = Project.visible
     end
+    user_values += User.active.all(
+      :include => :members,
+      :conditions => {"#{Member.table_name}.project_id" => projects}
+    ).collect{|u| [u.name, u.id.to_s]}
     @available_filters["assigned_to_id"] = { :type => :list_optional, :order => 4, :values => user_values } unless user_values.empty?
     @available_filters["author_id"] = { :type => :list, :order => 5, :values => user_values } unless user_values.empty?
     
