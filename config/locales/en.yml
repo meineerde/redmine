@@ -465,6 +465,7 @@ en:
   label_enumeration_new: New value
   label_information: Information
   label_information_plural: Information
+  label_information__plural_raw: Raw information
   label_please_login: Please log in
   label_register: Register
   label_login_with_open_id_option: or login with OpenID

@@ -75,9 +75,18 @@ class AdminController < ApplicationController
   end
   
   def info
-    environment = Redmine::About.environment
-    environment.each_pair do |key, value|
-      instance_variable_set("@env_#{key.to_s}", value)
+    respond_to do |format|
+      format.html do
+        environment = Redmine::About.environment %w(checklist rails)
+        environment[:plugins] = Redmine::Plugin.all
+        environment.each_pair do |key, value|
+          instance_variable_set("@env_#{key.to_s}", value)
+        end
+        render :action => 'info'
+      end
+      format.txt do
+        render :text => Redmine::About, :layout => false
+      end
     end
-  end  
+  end
 end
