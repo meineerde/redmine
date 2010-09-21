@@ -6,8 +6,12 @@ module Redmine
     include Redmine::I18n
     
     class << self
-      def to_s
-        print_plugin_info
+      def info(options = [])
+        print_environment_info(options)
+      end
+      
+      def to_s()
+        print_environment_info
       end
       
       def print(header, properties, column_width)
@@ -16,39 +20,60 @@ module Redmine
         end] * "\n"
       end
       
-      def print_plugin_info
-        environment = self.environment
-
+      def info_title
+        { 'checklist' => "Checklist",
+          'rails' => "Rails Info",
+          'plugins' => 'Installed Plugins',
+          'gems' => 'Installed Ruby Gems'
+        }
+      end
+      
+      def print_environment_info(options = [])
+        options = (%w(checklist rails plugins) + options.collect(&:to_s)).uniq
+        
         output =  "About your Redmine's environment\n"
         output << "================================"
-
-        checklist = environment[:checklist].collect {|label, value| [l(label), value ? "Yes" : "No"]}
-        info = environment[:rails].collect {|label, value| [(label.is_a?(Symbol) ? l(label) : label), value]}
-        plugins = environment[:plugins].collect {|plugin| [plugin.name, plugin.version] } || nil
+        
+        environment = self.environment(options).inject({}) do |result, (name, info)|
+          result[name] = info.collect do |label, value|
+            label = label.is_a?(Symbol) ? l(label) : label
+            value = (value ? l(:general_text_Yes) : l(:general_text_No)) if (!!value == value) # value is a boolean
+            [label, value]
+          end
+          result
+        end
 
         # get overall width of label column
-        column_width = [
-          checklist.collect {|label, value| label.length }.max,
-          info.collect {|label, value| label.length }.max,
-          plugins.collect {|label, value| label.length }.max || 0
-        ].max
-
-        output += print("Checklist", checklist, column_width)
-        output += print("Rails info", info, column_width)
-        output += print("Plugins", plugins, column_width) if plugins.present?
-
+        column_width = environment.inject(0){|width, (type, data)| [width, data.collect {|label, value| label.length }.max].max}
+        
+        output += options.collect do |option|
+          title = info_title[option] || option.to_s.humnize
+          print(title, environment.delete(option), column_width)
+        end.join
         output
       end
   
-      def environment
-        environment = {}
-        environment[:checklist] = [
-          [:text_default_administrator_account_changed, User.find(:first, :conditions => ["login=? and hashed_password=?", 'admin', User.hash_password('admin')]).nil?],
+      def environment(options)
+        options.inject({}) do |result, info|
+          result[info] = send("environment_#{info}")
+          result
+        end
+      end
+    
+      def environment_checklist
+        [
+          [:text_default_administrator_account_changed, !!User.find(:first, :conditions => ["login=? and hashed_password=?", 'admin', User.hash_password('admin')]).nil?],
           [:text_file_repository_writable, File.writable?(Attachment.storage_path)],
           [:text_plugin_assets_writable, File.writable?(Engines.public_directory)],
           [:text_rmagick_available, Object.const_defined?(:Magick)]
         ]
+      end
     
+      def environment_plugins
+        Redmine::Plugin.all.collect {|plugin| [plugin.name, plugin.version] } || []
+      end
+    
+      def environment_rails
         app_servers = {
           'Mongrel' => {:name => 'Mongrel', :version => Proc.new{Mongrel::Const::MONGREL_VERSION}},
           'Thin' => {:name => 'Thin', :version => Proc.new{Thin::VERSION::STRING}},
@@ -81,21 +106,27 @@ module Redmine
           end
         end || l(:label_unknown)
 
-        environment[:rails] = Rails::Info.properties.dup
-        environment[:rails].tap do |info|
-          info.insert(3, ['Rake version', RAKEVERSION])
-          info.insert(11, [:text_log_file, Rails.configuration.log_path])
-          info.insert(13, [:text_database_encoding, encoding])
-        end
+        result = Rails::Info.properties.dup
+        result.insert(3, ['Rake version', RAKEVERSION])
+        result.insert(11, [:text_log_file, Rails.configuration.log_path])
+        result.insert(13, [:text_database_encoding, encoding])
 
-        environment[:rails] += [
+        result += [
           [:text_app_server, app_server],
           [:text_redmine_username, Etc.getlogin]
         ]
+      end
     
-        environment[:plugins] = Redmine::Plugin.all
-    
-        environment
+      def environment_gems
+        gems = Rails::VendorGemSourceIndex.new(Gem.source_index).installed_source_index
+        gems = gems.inject(Hash.new([])) do |result, (k, gem)|
+          result[gem.name] += [gem.version]
+          result
+        end
+      
+        gems.sort_by{|name, versions| name.downcase}.collect do |name, versions|
+          [name, versions.sort.join(", ")]
+        end
       end
     end
   end
