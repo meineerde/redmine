@@ -21,8 +21,8 @@ module Redmine
       end
       
       def info_title
-        { 'checklist' => "Checklist",
-          'rails' => "Rails Info",
+        { 'checklist' => 'Checklist',
+          'rails' => 'Rails Info',
           'plugins' => 'Installed Plugins',
           'gems' => 'Installed Ruby Gems'
         }
