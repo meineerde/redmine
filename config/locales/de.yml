@@ -649,6 +649,7 @@ de:
   label_sort_lowest: Ans Ende
   label_roadmap: Roadmap
   label_roadmap_due_in: "Fällig in {{value}}"
+  label_roadmap_due_doday: "Fällig heute"
   label_roadmap_overdue: "{{value}} verspätet"
   label_roadmap_no_issues: Keine Tickets für diese Version
   label_search: Suche
